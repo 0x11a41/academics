@@ -7,6 +7,7 @@
 
 #define PORT 8080
 #define MAX_BUFFER 1024
+#define ADDR "127.0.0.1"
 
 int main() {
     int client_socket;
@@ -20,8 +21,7 @@ int main() {
 
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
-
-    if (inet_pton(AF_INET, "127.0.0.1", &server_addr.sin_addr) <= 0) {
+    if (inet_pton(AF_INET, ADDR, &server_addr.sin_addr) <= 0) {
         perror("Invalid address or address not supported");
         exit(1);
     }
