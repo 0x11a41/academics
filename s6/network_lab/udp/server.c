@@ -1,60 +1,33 @@
-// INTERACTIVE UDP SERVER
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <assert.h>
 
 #define PORT 8080
-#define MAX_BUF_LEN 1024
+#define BUF_SIZ 1024
 
 int main() {
-    int sockfd;
-    struct sockaddr_in server_addr, client_addr;
-    socklen_t len = sizeof(client_addr);
-    char buffer[MAX_BUF_LEN];
-    char reply[MAX_BUF_LEN];
+    int fd = socket(AF_INET, SOCK_DGRAM, 0);
+    assert(fd != -1);
 
-    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-        perror("Socket failed");
-        exit(EXIT_FAILURE);
-    }
+    struct sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_port = htons(PORT);
 
-    memset(&server_addr, 0, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(PORT);
+    assert(bind(fd, (struct sockaddr*)&addr, sizeof(addr)) != -1);
+    printf("A client connected.\n\n");
 
-    if (bind(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
-        perror("Bind failed");
-        close(sockfd);
-        exit(EXIT_FAILURE);
-    }
-
-    printf("UDP Server listening on port %d...\n", PORT);
-
+    char buf[BUF_SIZ];
+    socklen_t addrlen = sizeof(addr);
     while (1) {
-        ssize_t n = recvfrom(sockfd, buffer, MAX_BUF_LEN - 1, 0,
-                             (struct sockaddr *)&client_addr, &len);
-
-        if (n < 0) {
-            perror("recvfrom failed");
-            continue;
-        }
-
-        buffer[n] = '\0'; 
-        printf("\nClient says: %s", buffer);
-
-        printf("\nType reply to client: ");
-        char* s = fgets(reply, sizeof(reply), stdin);
-        assert(s != NULL);
-        reply[strcspn(reply, "\n")] = 0; // Remove newline
-
-        sendto(sockfd, reply, strlen(reply), 0,
-               (struct sockaddr *)&client_addr, len);
+        memset(buf, 0, BUF_SIZ);
+        int len = recvfrom(fd, buf, BUF_SIZ, 0, (struct sockaddr*)&addr, &addrlen);
+        assert(len > 0);
+        printf("client: %s\nreply: ", buf);
+        assert(fgets(buf, BUF_SIZ, stdin) != NULL);
+        assert(sendto(fd, buf, strlen(buf), 0, (struct sockaddr*)&addr, addrlen) != -1);
     }
-
-    close(sockfd);
-    return 0;
+    close(fd);
 }
