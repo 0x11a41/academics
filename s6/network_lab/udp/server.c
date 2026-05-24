@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <assert.h>
+#include <sys/socket.h>
 
 #define PORT 8080
 #define BUF_SIZ 1024

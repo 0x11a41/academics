@@ -9,31 +9,29 @@
 #define ADDR "127.0.0.1"
 
 int main() {
-    int sock;
-    struct sockaddr_in serv_addr;
     char buffer[BUFFER_SIZE];
-
-    sock = socket(AF_INET, SOCK_STREAM, 0);
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
     assert(sock != -1);
 
+    struct sockaddr_in serv_addr;
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(PORT);
 
     assert(inet_pton(AF_INET, ADDR, &serv_addr.sin_addr) > 0);
     assert(connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) != -1);
 
-    char command[20];
+    char cmd[20];
     printf("Enter command (UPLOAD/DOWNLOAD): ");
-    scanf("%19s", command);
-    send(sock, command, strlen(command), 0);
+    scanf("%s", cmd);
+    send(sock, cmd, strlen(cmd), 0);
 
     char filename[100];
     printf("Enter filename: ");
-    scanf("%99s", filename);
+    scanf("%s", filename);
 
     send(sock, filename, strlen(filename), 0);
 
-    if (strcmp(command, "UPLOAD") == 0) {
+    if (strcmp(cmd, "UPLOAD") == 0) {
         FILE *fp = fopen(filename, "rb");
         assert(fp != NULL);
 
@@ -44,7 +42,7 @@ int main() {
 
         fclose(fp);
         printf("File uploaded successfully.\n");
-    } else if (strcmp(command, "DOWNLOAD") == 0) {
+    } else if (strcmp(cmd, "DOWNLOAD") == 0) {
         FILE *fp = fopen(filename, "wb");
         assert(fp != NULL);
 

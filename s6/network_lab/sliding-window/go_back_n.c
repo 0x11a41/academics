@@ -1,43 +1,49 @@
-// STOP_AND_WAIT
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <time.h>
-#include <unistd.h>
 
-#define TOTAL_FRAMES 4
-#define LOSS_CHANCE 30
+#define LOSS_CHANCE 20
 
-int main() {
+int main()
+{
     srand(time(NULL));
-    int current_frame = 0;
-    int seq_num = 0;
-    bool ack_received = false;
+    int win_size, n, s = 0;
+    printf("Enter total frames: ");
+    scanf("%d", &n);
+    printf("Enter window size: ");
+    scanf("%d", &win_size);
+    int acked[n], expected_frame = 0;
+    for (int i = 0; i < n; i++) acked[i] = 0;
 
-    while (current_frame < TOTAL_FRAMES) {
-        printf("SENDER: Sending Frame %d (Seq: %d)\n", current_frame, seq_num);
+    while (s < n) {
+        for (int i = s; i < n && i < s + win_size; i++) {
+            printf("\n[sender] sending frame %d\n", i);
 
-        sleep(1);
-
-        int random_event = rand() % 100;
-        if (random_event < LOSS_CHANCE) { // frame lost
-            printf("[NETWORK] ! Frame %d was lost.\n", current_frame);
-            printf("SENDER: Timeout! No ACK received. Retransmitting\n\n");
-        } else {
-            printf("RECEIVER: Frame %d received. Sending ACK %d\n", current_frame, seq_num);
-
-            random_event = rand() % 100;
-            if (random_event < (LOSS_CHANCE / 2)) {
-                printf("[NETWORK] ! ACK %d was lost.\n", seq_num);
-                printf("SENDER: No ACK received. Retransmitting\n\n");
+            if (rand() % 100 < LOSS_CHANCE) {
+                printf("![NETWORK] frame lost.\n");
             } else {
-                printf("SENDER: ACK %d received successfully.\n\n", seq_num);
-                current_frame++;
-                seq_num ^= 1;
+                printf("[receiver] got frame %d.\n", i);
+
+                if (i == expected_frame) {
+                    printf("[receiver] frame %d is expected. sending ACK...\n", i);
+
+                    if (rand() % 100 < LOSS_CHANCE) {
+                        printf("![NETWORK] ACK lost.\n");
+                    } else {
+                        printf("[sender] got ACK (frame %d)\n", i);
+                        acked[i] = 1;
+                        expected_frame++;
+                    }
+                } else {
+                    printf("[receiver] frame %d is out of order (expected %d). Dropping\n", i, expected_frame);
+                }
             }
         }
-    }
 
-    printf("%d frames transmitted successfully.\n", TOTAL_FRAMES);
+        while (s < n && acked[s]) {
+            s++;
+            printf("sliding window... [%d -> %d]\n", s - 1, s);
+        }
+    }
     return 0;
 }

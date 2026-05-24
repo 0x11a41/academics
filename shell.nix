@@ -2,12 +2,8 @@
 
 pkgs.mkShell {
   buildInputs = with pkgs; [
-    clang
-    clang-tools
-    lldb
     pkg-config
   ];
-
   shellHook = ''
     export LOCALE_ARCHIVE="${pkgs.glibcLocales}/lib/locale/locale-archive"
     export LANG=en_US.UTF-8

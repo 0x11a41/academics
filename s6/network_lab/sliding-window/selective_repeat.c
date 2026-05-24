@@ -1,40 +1,45 @@
-// SELECTIVE REPEAT
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <unistd.h>
 
-#define WINDOW_SIZE 2
-#define TOTAL_FRAMES 8
 #define LOSS_CHANCE 20
 
-int main() {
+int main()
+{
     srand(time(NULL));
-    int s = 0, acked[TOTAL_FRAMES] = {0};
+    int win_size, n, s = 0;
+    printf("Enter total frames: ");
+    scanf("%d", &n);
+    printf("Enter window size: ");
+    scanf("%d", &win_size);
+    int acked[n];
+    for (int i = 0; i < n; i++) acked[i] = 0;
 
-    while (s < TOTAL_FRAMES) {
-        for (int i = s; i < s + WINDOW_SIZE && i < TOTAL_FRAMES; i++) {
+    while (s < n) {
+        for (int i = s; i < n && i < s + win_size; i++) {
             if (!acked[i]) {
-                printf("SENDER: Sending Frame %d\n", i);
-                usleep(400000);
+                printf("\n[sender] sending frame %d\n", i);
 
                 if (rand() % 100 < LOSS_CHANCE) {
-                    printf("[NETWORK] Frame %d was lost\033[0m\n", i);
+                    printf("![NETWORK] frame lost.\n");
                 } else {
-                    printf("RECEIVER: Received Frame %d. Sending ACK %d\n", i, i);
-                    acked[i] = 1;
+                    printf("[receiver] got frame %d.\n", i);
+                    printf("[receiver] sending ACK (frame %d)\n", i);
+
+                    if (rand() % 100 < LOSS_CHANCE) {
+                        printf("![NETWORK] frame lost.\n");
+                    } else {
+                        printf("[sender] got ACK (frame %d)\n", i);
+                        acked[i] = 1;
+                    }
                 }
             }
         }
 
-        // Slide window only if base frame is acknowledged
-        while (s < TOTAL_FRAMES && acked[s]) {
-            printf("SENDER: ACK %d received. Sliding Window...\n\n", s);
+        while (s < n && acked[s]) {
             s++;
+            printf("sliding window... [%d -> %d]\n", s - 1, s);
         }
-        usleep(500000);
     }
-
-    printf("%d frames sent and acknowledged successfully\n", TOTAL_FRAMES);
     return 0;
 }

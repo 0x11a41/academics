@@ -1,43 +1,28 @@
-// LEAKY BUCKET
 #include <stdio.h>
 
-int main() {
-    int bucket_size, incoming, outgoing, n;
-    int store = 0, dropped;
-
-    printf("Enter bucket size: ");
-    scanf("%d", &bucket_size);
-
-    printf("Enter number of packet inputs: ");
-    scanf("%d", &n);
-
-    printf("Enter outgoing rate: ");
-    scanf("%d", &outgoing);
-
-    while (n != 0) {
-        printf("\nEnter incoming packet size: ");
+int main()
+{
+    int capacity, leak_rate, incoming, dropped, stored = 0;
+    printf("bucket capacity: ");
+    scanf("%d", &capacity);
+    printf("leak rate: ");
+    scanf("%d", &leak_rate);
+    printf("Enter ctrl + c to stop this\n");
+    while (1) {
+        printf("\nincoming packet size: ");
         scanf("%d", &incoming);
-
-        if (incoming <= (bucket_size - store)) {
-            store = store + incoming;
-            printf("Bucket buffer size = %d out of %d\n", store, bucket_size);
+        if (incoming <= (capacity - stored)) {
+            stored += incoming;
         } else {
-            dropped = incoming - (bucket_size - store);
-            store = bucket_size;
-            printf("Dropped packets = %d\n", dropped);
-            printf("Bucket buffer size = %d out of %d\n", store, bucket_size);
+            dropped = incoming - (capacity - stored);
+            stored = capacity;
+            printf("Dropped %d bytes\n", dropped);
         }
-
-        printf("Current bucket status = %d out of %d\n", store, bucket_size);
-
-        store = store - outgoing;
-        if (store < 0)
-            store = 0;
-
-        printf("Bucket status after outgoing = %d out of %d\n", store, bucket_size);
-
-        n--;
+        printf("Bucket occupancy: [%d/%d]\n", stored, capacity);
+        printf("sending packets..\n");
+        stored -= leak_rate;
+        if (stored < 0) stored = 0;
+        printf("Bucket occupancy: [%d/%d]\n", stored, capacity);
     }
-
     return 0;
 }
