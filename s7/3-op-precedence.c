@@ -1,7 +1,7 @@
 /* DESCRIPTION
 check weather the given grammar is operator grammar or not.
 terminal symbols: { id, +, -, $, (, ), *, / }
-GRAMMAR: E-> (E) | E*E | E+E | i
+GRAMMAR: E-> (E) | E*E | E/E | E+E | E-E | i
 */
 
 #include <stdio.h>
@@ -57,19 +57,23 @@ static inline void shift()
 int stk_ends_with(const char *suffix)
 {
     int len = strlen(suffix);
-    int stack_len = top + 1;
-    if (stack_len < len) return 0;
-    return strcmp(stk + stack_len - len, suffix) == 0;
+    if ((top + 1) < len) return 0;
+    return strcmp(stk + (top + 1) - len, suffix) == 0;
 }
 
-int is_valid_precedence()
+int is_valid_precedence(void)
 {
-    if (stk_ends_with("i") ||  stk_ends_with("(E)") ||  stk_ends_with("E*E")) {
+    if (stk_ends_with("i") || stk_ends_with("(E)")) {
         return 1;
     }
 
-    if (stk_ends_with("E+E")) {
-        if (ip.buf[ip.i] == '*' || ip.buf[ip.i] == '(') {
+    if (stk_ends_with("E*E") || stk_ends_with("E/E")) {
+        return 1;
+    }
+
+    if (stk_ends_with("E+E") || stk_ends_with("E-E")) {
+        const char s = ip.buf[ip.i];
+        if (s == '*' || s == '/' || s == '(') {
             return 0;
         }
         return 1;
@@ -78,33 +82,45 @@ int is_valid_precedence()
     return 0;
 }
 
-// E-> (E) | E*E | E+E | i
-int reduceable(void)
+int try_reduce(void)
 {
     if (!is_valid_precedence()) {
         return 0;
+    }
 
-    } else if (stk_ends_with("(E)")) {
+    if (stk_ends_with("(E)")) {
         top -= 3;
         push('E');
-        printf("Reduce: E->(E)");
+        printf("Reduce: E->(E)\n");
         return 1;
-
-    } else if (stk_ends_with("E*E")) {
-       top -= 3;     
-       push('E');
-       printf("Reduce: E->E*E");
-       return 1;
-
-    } else if (stk_ends_with("E+E")) {
-       top -= 3;     
-       push('E');
-       printf("Reduce: E->E+E");
-       return 1;
-
-    } else if (stk_ends_with("i")) {
+    } 
+    else if (stk_ends_with("E*E")) {
+        top -= 3;     
+        push('E');
+        printf("Reduce: E->E*E\n");
+        return 1;
+    } 
+    else if (stk_ends_with("E/E")) {
+        top -= 3;     
+        push('E');
+        printf("Reduce: E->E/E\n");
+        return 1;
+    } 
+    else if (stk_ends_with("E+E")) {
+        top -= 3;     
+        push('E');
+        printf("Reduce: E->E+E\n");
+        return 1;
+    } 
+    else if (stk_ends_with("E-E")) {
+        top -= 3;     
+        push('E');
+        printf("Reduce: E->E-E\n");
+        return 1;
+    } 
+    else if (stk_ends_with("i")) {
         stk[top] = 'E';
-        printf("Reduce: E->i");
+        printf("Reduce: E->i\n");
         return 1;
     }
 
@@ -137,17 +153,16 @@ int main()
         printarr(ip.buf, ip.i, ip.len);
         printf("\t");
         fflush(stdout);
-        if (reduceable()) {
-            printf("\n");
 
-        } else if (strcmp(stk, "$E") == 0 && ip.buf[ip.i] == '$') {
+        if (try_reduce()) continue;
+
+        if (strcmp(stk, "$E") == 0 && ip.buf[ip.i] == '$') {
             printf(ANSI_BOLD ANSI_GREEN "Accepted\n" ANSI_RESET);
             break;
-
-        } else {
-            shift();
-            printf("Shift\n");
         }
+        
+        shift();
+        printf("Shift\n");
     }
 
     printf("%s is an operator grammar\n", ip.buf);
