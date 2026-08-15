@@ -3,8 +3,8 @@
 
 int main()
 {
-    int i = 1;
-    i++;
-    printf("hello world! %d\n", i);
+    for (int i = 0; i < 10; i++) {
+        printf("hello\n");
+    }
     return 0;
 }

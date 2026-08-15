@@ -4,11 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define ANSI_RESET "\x1b[0m"
-#define ANSI_DIM   "\x1b[2m"
-#define ANSI_BOLD  "\x1b[1m"
-#define ANSI_RED   "\x1b[31m"
-#define ANSI_BLUE  "\x1b[34m"
+#define ANSI_RESET   "\x1b[0m"
+#define ANSI_DIM     "\x1b[2m"
+#define ANSI_BOLD    "\x1b[1m"
+#define ANSI_GREEN   "\x1b[32m"
 
 typedef enum {
     TOK_INVALID,
@@ -50,25 +49,23 @@ typedef struct {
 
 void print_token(const Token *tok)
 {
-    printf("( ");
-    printf(ANSI_BLUE);
+    printf("( " ANSI_BOLD);
     for (int i = 0; i < tok->lexeme.len; i++) {
         printf("%c", tok->lexeme.ref[i]);
     }
-    printf(ANSI_RESET);
-    printf(ANSI_DIM "::" ANSI_RESET);
+    printf(ANSI_RESET ANSI_DIM "::" ANSI_RESET);
     print_toktype(tok->type);
     printf(" )\n");
 }
 
-void lexer_skip_ws()
+void lexer_skip_whitespace()
 {
     while (lex.i < lex.len && isspace(lex.buf[lex.i])) lex.i++;
 }
 
 void lexer_skip_comment()
 {
-    lexer_skip_ws();
+    lexer_skip_whitespace();
     char curr = lex.buf[lex.i];
     char next = lex.buf[lex.i + 1];
     if (curr == '/') {
@@ -82,7 +79,7 @@ void lexer_skip_comment()
 
 void lexer_skip_macro()
 {
-    lexer_skip_ws();
+    lexer_skip_whitespace();
     if (lex.buf[lex.i] != '#') return;
     while (lex.i < lex.len && lex.buf[lex.i++] != '\n');
 }
@@ -140,7 +137,7 @@ int main(int argc, char **argv)
     if (argc < 2) {
         printf("\nError: didn't recive any file as input\n"
                "usage: %s <file_name.c>\n", argv[0]);
-        exit(EXIT_SUCCESS);
+        exit(EXIT_FAILURE);
     }
 
     FILE *fp = fopen(argv[1], "r");
@@ -158,41 +155,39 @@ int main(int argc, char **argv)
     fclose(fp);
 
     lex.buf[lex.len] = '\0';
-    printf(ANSI_BOLD "\n[[INPUT PROGRAM]]\n" ANSI_RESET);
+    printf(ANSI_GREEN ANSI_BOLD "\n[[ INPUT PROGRAM ]]\n" ANSI_RESET);
     printf("%s\n", lex.buf);
 
-    printf(ANSI_BOLD "\n[[TOKENS]]\n" ANSI_RESET);
+    printf(ANSI_GREEN ANSI_BOLD "\n[[ TOKENS ]]\n" ANSI_RESET);
 
     for (lex.i = 0; lex.i < lex.len;) {
         lexer_skip_comment();
         lexer_skip_macro();
-        lexer_skip_ws();
+        lexer_skip_whitespace();
 
-        if (lex.i >= lex.len)
-            break;
+        if (lex.i >= lex.len) break;
 
-        int curr = (unsigned char)lex.buf[lex.i];
-
+        int ch = lex.buf[lex.i];
         Token tok = {0};
 
-        if (isalpha(curr) || curr == '_') {
+        if (isalpha(ch) || ch == '_') {
             tok.lexeme = lexer_advance(is_alnumscore);
             tok.type = is_keyword(&tok.lexeme) ? TOK_KEYWORD : TOK_IDENTIFIER;
 
-        } else if (isdigit(curr)) {
+        } else if (isdigit(ch)) {
             tok.lexeme = lexer_advance(isdigit);
             tok.type = TOK_LITERAL;
 
-        } else if (curr == '\'' || curr == '"') {
+        } else if (ch == '\'' || ch == '"') {
             tok.lexeme = lexer_advance_literal();
             tok.type = TOK_LITERAL;
 
-        } else if (is_punct(curr)) {
+        } else if (is_punct(ch)) {
             tok.lexeme = (Lexeme) { .ref = lex.buf + lex.i, .len = 1 };
             lex.i++;
             tok.type = TOK_PUNCTUATION;
 
-        } else if (is_op(curr)) {
+        } else if (is_op(ch)) {
             tok.lexeme = lexer_advance(is_op);            
             tok.type = TOK_OPERATOR;
 
@@ -207,3 +202,50 @@ int main(int argc, char **argv)
     free(lex.buf);
     return 0;
 }
+
+/*
+[[ INPUT PROGRAM ]]
+// hello world
+#include <stdio.h>
+
+int main()
+{
+    for (int i = 0; i < 10; i++) {
+        printf("hello\n");
+    }
+    return 0;
+}
+
+
+[[ TOKENS ]]
+( int::KEYWORD )
+( main::IDENTIFIER )
+( (::PUNCTUATION )
+( )::PUNCTUATION )
+( {::PUNCTUATION )
+( for::KEYWORD )
+( (::PUNCTUATION )
+( int::KEYWORD )
+( i::IDENTIFIER )
+( =::OPERATOR )
+( 0::LITERAL )
+( ;::PUNCTUATION )
+( i::IDENTIFIER )
+( <::OPERATOR )
+( 10::LITERAL )
+( ;::PUNCTUATION )
+( i::IDENTIFIER )
+( ++::OPERATOR )
+( )::PUNCTUATION )
+( {::PUNCTUATION )
+( printf::IDENTIFIER )
+( (::PUNCTUATION )
+( "hello\n"::LITERAL )
+( )::PUNCTUATION )
+( ;::PUNCTUATION )
+( }::PUNCTUATION )
+( return::KEYWORD )
+( 0::LITERAL )
+( ;::PUNCTUATION )
+( }::PUNCTUATION )
+*/
