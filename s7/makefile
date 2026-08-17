@@ -10,5 +10,8 @@ eclosure: 2-eclosure.c
 op: 3-op-precedence.c
 	$(CC) $(CFLAGS) 3-op-precedence.c -Wall -Wextra -fsanitize=address -g -o op
 
+recdec: 4-recdec.c
+	$(CC) $(CFLAGS) 4-recdec.c -Wall -Wextra -fsanitize=address -g -o recdec
+
 .PHONY: all clex
 
