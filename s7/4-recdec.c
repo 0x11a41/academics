@@ -21,9 +21,7 @@ void err()
 void match(char expected)
 {
     if (lookahead == expected) {
-        do {
-            lookahead = getchar();
-        } while (lookahead == ' ');
+        lookahead = getchar();
     } else {
         err();
     }
@@ -42,8 +40,7 @@ void F()
     }
 }
 
-void TPrime()
-{
+void TPrime() {
     if (lookahead == '*') {
         match('*'); F(); TPrime();
     }

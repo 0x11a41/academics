@@ -165,7 +165,7 @@ int main()
         printf("Shift\n");
     }
 
-    printf("%s is an operator grammar\n", ip.buf);
+    printf("%s is accepted\n", ip.buf);
     return 0;
 }
 
@@ -179,5 +179,5 @@ int main()
     $E*i	$	    Reduce: E->i
     $E*E	$	    Reduce: E->E*E
     $E	    $   	Accepted
-    i*i$ is an operator grammar
+    i*i$ is an accepted
 */
