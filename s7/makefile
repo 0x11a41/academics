@@ -19,5 +19,21 @@ srparser: 5-sr-parser.c
 constprop: 6-const-prop.c
 	$(CC) $(CFLAGS) 6-const-prop.c -Wall -Wextra -fsanitize=address -g -o constprop
 
-.PHONY: all clex
+immediate: 7-immediate-code-generation.c
+	$(CC) $(CFLAGS) 7-immediate-code-generation.c -Wall -Wextra -fsanitize=address -g -o immediate
+
+threeaddr: 8-threeaddress.c
+	$(CC) $(CFLAGS) 8-threeaddress.c -Wall -Wextra -fsanitize=address -g -o threeaddr
+
+lexvowels: 9-vowels-and-consonants.l
+	nix run nixpkgs#flex 9-vowels-and-consonants.l
+	$(CC) lex.yy.c -o lexvowels
+	rm lex.yy.c
+
+lexc: 10-lexc.l
+	nix run nixpkgs#flex 10-lexc.l
+	$(CC) lex.yy.c -o lexc
+	rm lex.yy.c
+
+.PHONY: all
 
