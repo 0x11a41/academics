@@ -1,3 +1,4 @@
+; vowels and consonants
 %{
 #include <stdio.h>
 int vowels = 0;

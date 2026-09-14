@@ -1,3 +1,5 @@
+// constant propogation
+
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -21,13 +23,10 @@ int is_constant(const char *s)
     return 1;
 }
 
-// Simple constant folding for expressions like "5+3", "12*4", etc.
-// Returns 1 if folding succeeded and result is written into 'result'
 int fold_constant_expr(const char *expr, char *result) {
     char left[20], right[20], op;
     int i = 0, j = 0;
 
-    // Extract left operand
     if (expr[0] == '-' || expr[0] == '+') left[j++] = expr[i++];
     while (isdigit(expr[i])) left[j++] = expr[i++];
     left[j] = '\0';

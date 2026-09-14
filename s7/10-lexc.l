@@ -1,3 +1,4 @@
+; lexical analyzer for C using lex
 %{
 #include <stdio.h>
 #include <stdlib.h>

@@ -1,4 +1,5 @@
-/* INPUT GRAMMAR RULES
+/* eclosure
+INPUT GRAMMAR RULES
     T      := (<from> <symbol> <to>)*
     from   := 0-9
     symbol := a-z | A-Z | 0-9 | # ; # means epsilon

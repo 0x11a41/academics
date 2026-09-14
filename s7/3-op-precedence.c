@@ -1,4 +1,5 @@
-/* DESCRIPTION
+/* operator precedence parser
+DESCRIPTION
 check weather the given grammar is operator grammar or not.
 terminal symbols: { id, +, -, $, (, ), *, / }
 GRAMMAR: E-> (E) | E*E | E/E | E+E | E-E | i
