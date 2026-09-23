@@ -1,136 +1,156 @@
 #include <stdio.h>
+#include <assert.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <stdlib.h>
-#include <assert.h>
 
-#define MAX_STMTS 20
-#define MAX_LEN   50
+#define LEN_LIM 16
 
-char stmts[MAX_STMTS][MAX_LEN];
 int n;
+char s[LEN_LIM][LEN_LIM];
 
-int is_constant(const char *s)
+struct expr {
+    char *stmt;
+    char lhs[LEN_LIM];
+    struct {
+        char a[LEN_LIM], op, b[LEN_LIM];
+    } rhs;
+};
+
+void copy_operand(char **s, char *dest)
 {
-    if (*s == '-' || *s == '+') s++;
-    if (!*s) return 0;
-    while (*s) {
+    int i;
+    for (i = 0; *s && isalnum(**s); (*s)++, i++) dest[i] = **s;
+    dest[i] = '\0';
+}
+
+int expr_create(char *s, struct expr *e)
+{
+    e->stmt = s;
+    copy_operand(&s, e->lhs);
+
+    if (*s != '=') return 0;
+    s++;
+
+    copy_operand(&s, e->rhs.a);
+
+    e->rhs.op = *s;
+    if (*s == '\0') {
+        *e->rhs.b = '\0';
+        return 1;
+    }
+    s++;
+
+    copy_operand(&s, e->rhs.b);
+    return 1;
+}
+
+int is_constant(const struct expr *e) { return e->rhs.op == 0; }
+
+int isnum(const char *s)
+{
+    if (!s) return 0;
+    while (*s != '\0') {
         if (!isdigit(*s)) return 0;
         s++;
     }
     return 1;
 }
 
-// Simple constant folding for expressions like "5+3", "12*4", etc.
-// Returns 1 if folding succeeded and result is written into 'result'
-int fold_constant_expr(const char *expr, char *result) {
-    char left[20], right[20], op;
-    int i = 0, j = 0;
-
-    // Extract left operand
-    if (expr[0] == '-' || expr[0] == '+') left[j++] = expr[i++];
-    while (isdigit(expr[i])) left[j++] = expr[i++];
-    left[j] = '\0';
-
-    if (!is_constant(left) || expr[i] == '\0') return 0;
-
-    op = expr[i++];
-    if (op != '+' && op != '-' && op != '*' && op != '/') return 0;
-
-    j = 0;
-    if (expr[i] == '-' || expr[i] == '+') right[j++] = expr[i++];
-    while (isdigit(expr[i])) right[j++] = expr[i++];
-    right[j] = '\0';
-
-    if (!is_constant(right) || expr[i] != '\0') return 0;
-
-    int l = atoi(left);
-    int r = atoi(right);
-    int res;
-
-    switch (op) {
-        case '+': res = l + r; break;
-        case '-': res = l - r; break;
-        case '*': res = l * r; break;
-        case '/': 
-            if (r == 0) return 0;
-            res = l / r; 
-            break;
-        default: return 0;
-    }
-
-    sprintf(result, "%d", res);
+int can_fold(const struct expr *e)
+{
+    if (is_constant(e)) return 0;
+    if (!isnum(e->rhs.a) || !isnum(e->rhs.b)) return 0;
     return 1;
 }
 
-int main() {
-    printf("Simple Constant Propagation + Folding\n");
-    printf("Enter number of statements: ");
+void fold(struct expr *e)
+{
+    int a = atoi(e->rhs.a);
+    int b = atoi(e->rhs.b);
+    int r;
+    switch (e->rhs.op) {
+        case '+': r = a + b; break;
+        case '-': r = a - b; break;
+        case '/': r = a / b; break;
+        case '*': r = a * b; break;
+        case '%': r = a % b; break;
+        default:
+            printf("ERR! invalid operator found in statement: %s", e->stmt);
+            return;
+    }
+
+    sprintf(e->stmt, "%s=%d", e->lhs, r);
+    expr_create(e->stmt, e);
+}
+
+void propogate_constant(int stmt_id, const struct expr *e)
+{
+    for (int i = stmt_id + 1; i < n; i++) {
+        struct expr tmp = {0};
+        expr_create(s[i], &tmp);
+
+        int flag = 0;
+        if (strcmp(e->lhs, tmp.rhs.a) == 0) {
+            strcpy(tmp.rhs.a, e->rhs.a);
+            flag = 1;
+        } else if (strcmp(e->lhs, tmp.rhs.b) == 0) {
+            flag = 1;
+            strcpy(tmp.rhs.b, e->rhs.a);
+        }
+
+        if (flag) {
+            sprintf(tmp.stmt, "%s=%s%c%s", tmp.lhs, tmp.rhs.a, tmp.rhs.op, tmp.rhs.b);
+        }
+    }
+}
+
+int main()
+{
+    printf("Enter the number of statements: ");
     scanf("%d", &n);
     getchar();
 
-    printf("Enter statements (example: a=5   or   b=a+3):\n");
-    for (int i = 0; i < n; i++) {
-        printf("Statement %d: ", i + 1);
-        assert(fgets(stmts[i], MAX_LEN, stdin) != NULL);
-        stmts[i][strcspn(stmts[i], "\n")] = '\0';
+    printf("Enter statements\n");
+
+    for (int i = 0; i < n; ++i) {
+        printf("\tS%d: ", i + 1);
+        assert(fgets(s[i], LEN_LIM, stdin) != NULL);
+        s[i][strlen(s[i]) - 1] = '\0';
     }
 
+    struct expr e;
     for (int i = 0; i < n; i++) {
-        char var = stmts[i][0];
-        char *eq = strchr(stmts[i], '=');
-        if (!eq) continue;
+        e = (struct expr){0};
+        if (!expr_create(s[i], &e)) {
+            printf("cannot interpert expression: %s\n", s[i]);
+            continue;
+        };
+        
+        if (can_fold(&e)) fold(&e);
 
-        char *rhs = eq + 1;
-
-        char folded[20];
-        if (fold_constant_expr(rhs, folded)) {
-            sprintf(eq + 1, "%s", folded);
-            rhs = eq + 1;
-        }
-
-        if (is_constant(rhs)) {
-            char constant[20];
-            strcpy(constant, rhs);
-
-            // Replace the variable with the constant in later statements
-            for (int j = i + 1; j < n; j++) {
-                for (int k = 0; stmts[j][k]; k++) {
-                    if (stmts[j][k] == var) {
-                        // Replace single character variable with the constant string
-                        // (simple version – works best when variable is a single letter)
-                        char temp[MAX_LEN];
-                        stmts[j][k] = '\0';
-                        sprintf(temp, "%s%s%s", stmts[j], constant, stmts[j] + k + 1);
-                        strcpy(stmts[j], temp);
-                        break;  // only replace first occurrence for simplicity
-                    }
-                }
-            }
-        }
+        if (is_constant(&e)) propogate_constant(i, &e);
     }
 
-    printf("\nStatements after constant propagation + folding:\n");
+    printf("result\n");
     for (int i = 0; i < n; i++) {
-        if (stmts[i][0] != '\0')
-            printf("%s\n", stmts[i]);
+        printf("%s\n", s[i]);
     }
-
+    
     return 0;
 }
 
-/* OUTPUT:
-Simple Constant Propagation + Folding
-Enter number of statements: 4
-Enter statements (example: a=5   or   b=a+3):
-Statement 1: a=2+2
-Statement 2: b=c+a
-Statement 3: c=a*5
-Statement 4: d=c/a
-
-Statements after constant propagation + folding:
+/* OUTPUT
+Enter the number of statements: 4
+Enter statements
+	S1: a=2+2
+	S2: b=c+a
+	S3: c=a*5
+	S4: d=c/a
+result
 a=4
 b=c+4
 c=20
 d=5
 */
+
