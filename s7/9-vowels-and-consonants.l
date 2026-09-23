@@ -27,7 +27,3 @@ int yywrap()
 {
     return 1;
 }
-
-; Enter a string: hello world
-; Number of vowels     : 3
-; Number of consonants : 7
