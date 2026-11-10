@@ -3,6 +3,9 @@
 pkgs.mkShell {
   buildInputs = with pkgs; [
     pkg-config
+    flex
+    bison
+    gcc
   ];
   shellHook = ''
     export LOCALE_ARCHIVE="${pkgs.glibcLocales}/lib/locale/locale-archive"
