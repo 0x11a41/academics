@@ -1,3 +1,4 @@
+; vowels and consonants
 %{
     int vowels = 0;
     int consonants = 0;

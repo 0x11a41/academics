@@ -1,137 +1,145 @@
+// simplified lexical analyzer for C
+
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
 #include <ctype.h>
+#include <stdlib.h>
 
-FILE *fp = NULL;
-char buf[256];
+const char *keywords[] = {
+    "auto", "break", "case", "char", "const", "continue", "default", "do",
+    "double", "else", "enum", "extern", "float", "for", "goto", "if",
+    "int", "long", "register", "return", "short", "signed", "sizeof", "static",
+    "struct", "switch", "typedef", "union", "unsigned", "void", "volatile", "while"
+};
 
-int is_keyword(const char *s)
+int is_keyword(const char *str)
 {
-    const char *keywords[] = { "int", "return" };
-    const int n = sizeof(keywords) / sizeof(char*);
-    for (int i = 0; i < n; i++) {
-        if (strcmp(s, keywords[i]) == 0) {
+    for (int i = 0; i < 32; i++) {
+        if (strcmp(str, keywords[i]) == 0)
             return 1;
-        }
     }
     return 0;
 }
 
-int isop(char ch)
+int is_operator(char c)
 {
-    char *str = "+-/*|=^&%!<>~";
-    for (int i = 0; str[i] != '\0'; i++) {
-        if (str[i] == ch) return 1;
-    }
-    return 0;
+    return c == '+' || c == '-' || c == '*' || c == '/' ||
+           c == '%' || c == '=' || c == '<' || c == '>' ||
+           c == '!' || c == '&' || c == '|' || c == '^';
 }
 
-int ispunc(char ch)
+int main()
 {
-    char *punc = "(){}[]?:.,;";
-    for (int i = 0; punc[i] != '\0'; i++) {
-        if (punc[i] == ch) return 1;
+    char c, str[50];
+    int i, n;
+
+    FILE *f = fopen("test.c", "r");
+    if (f == NULL) {
+        printf("Cannot open file\n");
+        return 1;
     }
-    return 0;
-}
 
-void advance(char ch, int (*validate)(int))
-{
-    assert(fp != NULL);
-    int i = 0;
-    while (validate(ch)) {
-        buf[i++] = ch;
-        ch = fgetc(fp);
-    }
-    buf[i] = '\0';
-    fseek(fp, -1, SEEK_CUR);
-}
-
-int isnum(int ch) { return isdigit(ch) || ch == '.'; }
-
-int main() {
-    fp = fopen("input.c", "r");
-    assert(fp != NULL);
-
-    for (char ch = fgetc(fp); ch != EOF; ch = fgetc(fp)) {
-        while (isspace(ch)) ch = fgetc(fp);
-        if (ch == EOF) break;
-
-        if (isalpha(ch) || ch == '_') {
-            advance(ch, isalnum);
-
-            printf("%s: ", buf);
-            if (is_keyword(buf)) {
-                printf("KEYWORD");
-            } else {
-                printf("IDENTIFIER");
+    while ((c = getc(f)) != EOF) {
+        if (isdigit(c)) {
+            n = c - '0';
+            c = getc(f);
+            while (isdigit(c)) {
+                n = n * 10 + (c - '0');
+                c = getc(f);
             }
+            printf("%d is a NUMBER\n", n);
+            ungetc(c, f);
         }
-        else if (isdigit(ch)) {
-            advance(ch, isnum);
-            printf("%s: NUMBER", buf);
-        }
-        else if (ch == '\'' || ch == '"') {
-            char quote_type = ch;
-            int i = 0;
-            do {
-                buf[i++] = ch;
-                ch = fgetc(fp);
-            } while (ch != EOF && ch != quote_type && ch != '\n');
-
-            buf[i++] = ch;
-            buf[i] = '\0';
-
-            if (ch == '\n') {
-                printf("%s: ERR! LITERAL NOT TERMINATED\n", buf);
-            } else {
-                printf("%s: LITERAL", buf);
+        else if (isalpha(c) || c == '_') {
+            i = 0;
+            str[i++] = c;
+            c = getc(f);
+            while (isalnum(c) || c == '_') {
+                str[i++] = c;
+                c = getc(f);
             }
+            str[i] = '\0';
+            ungetc(c, f);
+
+            if (is_keyword(str))
+                printf("%s is a KEYWORD\n", str);
+            else
+                printf("%s is an IDENTIFIER\n", str);
         }
-        else if (isop(ch)) {
-            printf("%c: OPERATOR", ch);
+        else if (c == ' ' || c == '\t' || c == '\n') {
+            continue;
         }
-        else if (ispunc(ch)) {
-            printf("%c: PUNCTUATION", ch);
+        else if (is_operator(c)) {
+            i = 0;
+            str[i++] = c;
+            c = getc(f);
+
+            if ((str[0] == '+' && c == '+') || (str[0] == '-' && c == '-') ||
+                (str[0] == '=' && c == '=') || (str[0] == '!' && c == '=') ||
+                (str[0] == '<' && c == '=') || (str[0] == '>' && c == '=') ||
+                (str[0] == '&' && c == '&') || (str[0] == '|' && c == '|') ||
+                (str[0] == '<' && c == '<') || (str[0] == '>' && c == '>') ||
+                (str[0] == '+' && c == '=') || (str[0] == '-' && c == '=') ||
+                (str[0] == '*' && c == '=') || (str[0] == '/' && c == '=')) {
+                str[i++] = c;
+                c = getc(f);
+            }
+
+            str[i] = '\0';
+            ungetc(c, f);
+            printf("%s is an OPERATOR\n", str);
         }
         else {
-            printf("%c: INVALID TOKEN", ch);
+            printf("%c is a SPECIAL SYMBOL\n", c);
         }
-        printf("\n");
     }
 
-    fclose(fp);
-
+    fclose(f);
     return 0;
 }
-/* input.c
+
+/* OUTPUT:
+############### test.c ##############
 int main()
 {
     int i = 0;
     printf("hello world");
     return 0;
 }
-*/
 
-/* OUTPUT
-int: KEYWORD
-main: IDENTIFIER
-(: PUNCTUATION
-): PUNCTUATION
-{: PUNCTUATION
-int: KEYWORD
-i: IDENTIFIER
-=: OPERATOR
-0: NUMBER
-;: PUNCTUATION
-printf: IDENTIFIER
-(: PUNCTUATION
-"hello world": LITERAL
-): PUNCTUATION
-;: PUNCTUATION
-return: KEYWORD
-0: NUMBER
-;: PUNCTUATION
-}: PUNCTUATION
+-------------------------------------
+int is a KEYWORD
+main is an IDENTIFIER
+( is a SPECIAL SYMBOL
+) is a SPECIAL SYMBOL
+{ is a SPECIAL SYMBOL
+for is a KEYWORD
+( is a SPECIAL SYMBOL
+int is a KEYWORD
+i is an IDENTIFIER
+= is an OPERATOR
+0 is a NUMBER
+; is a SPECIAL SYMBOL
+i is an IDENTIFIER
+< is an OPERATOR
+10 is a NUMBER
+; is a SPECIAL SYMBOL
+i is an IDENTIFIER
+++ is an OPERATOR
+) is a SPECIAL SYMBOL
+{ is a SPECIAL SYMBOL
+printf is an IDENTIFIER
+( is a SPECIAL SYMBOL
+" is a SPECIAL SYMBOL
+hello is an IDENTIFIER
+\ is a SPECIAL SYMBOL
+n is an IDENTIFIER
+" is a SPECIAL SYMBOL
+) is a SPECIAL SYMBOL
+; is a SPECIAL SYMBOL
+} is a SPECIAL SYMBOL
+return is a KEYWORD
+0 is a NUMBER
+; is a SPECIAL SYMBOL
+} is a SPECIAL SYMBOL
 */

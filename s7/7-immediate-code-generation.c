@@ -1,3 +1,5 @@
+// intermediate code generation
+
 #include <stdio.h>
 #include <string.h>
 

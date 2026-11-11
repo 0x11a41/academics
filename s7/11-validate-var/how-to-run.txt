@@ -1,0 +1,11 @@
+lex lexer.l
+
+yacc -d parser.y
+
+gcc y.tab.c lex.yy.c
+
+./a.out
+
+OUTPUT
+Enter variable name: _self
+valid variable name

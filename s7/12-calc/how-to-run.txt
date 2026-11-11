@@ -1,0 +1,11 @@
+lex lexer.l
+
+yacc -d parser.y
+
+gcc y.tab.c lex.yy.c
+
+./a.out
+
+OUTPUT
+enter expression: 1+2*3
+Result = 7

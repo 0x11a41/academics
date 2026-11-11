@@ -1,4 +1,5 @@
-/* GRAMMAR:
+/* shift reduce parser
+GRAMMAR:
     E → (E) | E*E | E/E | E+E | E-E | i
 */
 
